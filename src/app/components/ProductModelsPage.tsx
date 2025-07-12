@@ -1,30 +1,16 @@
 /**
- * ProductModelsPage Component
+ * ProductModelsPage Component with RAG Integration
  * 
- * Displays all models for a specific product type within a brand. This is the most
- * detailed view in the application hierarchy, showing individual product models
- * with their specifications and action buttons.
+ * Enhanced version of the ProductModelsPage that includes RAG Q&A functionality.
+ * Users can now ask questions about specific models or general HVAC information.
  * 
  * Route: /brand/[brandId]/product/[productId]
  * 
  * Features:
- * - Displays brand and product type information
- * - Lists all models for the selected product type
- * - Shows model specifications from specification_v1 table
+ * - All existing functionality preserved
+ * - Added RAG Q&A component for model-specific questions
  * - PDF documentation access from manuals table
- * - Search functionality for filtering models
- * - Navigation breadcrumbs showing full path
- * - Action buttons for each model (PDF, Settings)
- * - Loading states and error handling
- * - Fallback image handling for missing model images
- * 
- * Data Flow:
- * 1. Fetches brand details using brandId
- * 2. Fetches product type details using productId
- * 3. Fetches models associated with the product type
- * 4. Fetches specifications for each model from specification_v1 table
- * 5. Fetches manuals/PDFs for each model from manuals table
- * 6. Combines all data for display
+ * - AI-powered question answering using manual content
  */
 
 "use client"
@@ -38,7 +24,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-
+import RAGQA from './RAGQA'
 // Initialize Supabase client with environment variables
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -316,6 +302,8 @@ export default function ProductModelsPage() {
           </div>
           {/* Breadcrumb skeleton */}
           <div className="h-6 bg-gray-200 rounded mb-6 w-48"></div>
+          {/* RAG Q&A skeleton */}
+          <div className="h-16 bg-gray-200 rounded mb-6"></div>
           {/* Models list skeleton */}
           <div className="space-y-4">
             {[...Array(4)].map((_, i) => (
@@ -396,19 +384,27 @@ export default function ProductModelsPage() {
         </div>
       </div>
 
+      {/* NEW: RAG Q&A Component */}
+      <div className="mb-6">
+        <RAGQA 
+          modelNumber={undefined} // Set to specific model if needed, or keep undefined for general queries
+          className="w-full"
+        />
+      </div>
+
       {/* Models List */}
       <div className="space-y-2">
         {filteredModels.map((model) => (
           <div
             key={model.id}
-            className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+            className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
             onClick={() => {
               // TODO: Navigate to model details page or handle model selection
               console.log('Model clicked:', model.model_number)
             }}
           >
             {/* Model information section */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-1">
               {/* Model image */}
               <div className="w-12 h-12 relative">
                 <Image
@@ -425,7 +421,7 @@ export default function ProductModelsPage() {
               </div>
               
               {/* Model details */}
-              <div>
+              <div className="flex-1">
                 {/* Model number (primary identifier) */}
                 <div className="text-lg font-medium text-gray-900">
                   {model.model_number}

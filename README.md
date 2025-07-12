@@ -1,4 +1,4 @@
-# HVAC Catalog - Cere Assignment 
+# HVAC Catalog - Cere Assignment
 
 A modern web application for browsing HVAC equipment catalogs with hierarchical navigation from brands to individual product models. Built with Next.js, TypeScript, and Supabase.
 
@@ -91,12 +91,14 @@ Before setting up the application, ensure you have the following installed on yo
 ### Environment Setup
 
 1. **Clone the Repository**
+
    ```bash
    git clone <repository-url>
    cd havc-catalog-cere-ai
    ```
 
 2. **Install Dependencies**
+
    ```bash
    npm install
    # or if using yarn
@@ -104,17 +106,18 @@ Before setting up the application, ensure you have the following installed on yo
    ```
 
 3. **Environment Configuration**
-   
+
    Create a `.env.local` file in the root directory and add your Supabase credentials:
+
    ```env
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
-   
+
    **Note:** Replace the placeholder values with your actual Supabase project credentials. These are required for database connectivity.
 
 4. **Database Setup**
-   
+
    Ensure your Supabase database has the following tables with the required structure:
    - `brands` - Contains brand information (id, name, image_url)
    - `product_types` - Contains product categories (id, name, brand_id, image_url)
@@ -124,14 +127,17 @@ Before setting up the application, ensure you have the following installed on yo
 ### Running the Application
 
 1. **Development Mode**
+
    ```bash
    npm run dev
    # or
    yarn dev
    ```
+
    The application will start on [http://localhost:3000](http://localhost:3000)
 
 2. **Production Build**
+
    ```bash
    # Build the application
    npm run build
@@ -145,6 +151,7 @@ Before setting up the application, ensure you have the following installed on yo
    ```
 
 3. **Code Quality Check**
+
    ```bash
    npm run lint
    # or
@@ -165,6 +172,7 @@ Before setting up the application, ensure you have the following installed on yo
 The application follows a hierarchical browsing pattern with three main levels:
 
 #### 1. **Home Page** (`/`)
+
 - **Purpose**: Entry point displaying all available HVAC brands
 - **Features**:
   - Grid view of brand logos and names
@@ -173,16 +181,18 @@ The application follows a hierarchical browsing pattern with three main levels:
 - **Navigation**: Click on any brand to view its product types
 
 #### 2. **Brand Products Page** (`/brand/[brandId]`)
+
 - **Purpose**: Shows all product categories for a selected brand
 - **Features**:
   - Brand-specific search with placeholder text
   - Breadcrumb navigation showing current path
   - List of product types with images and names
-- **Navigation**: 
+- **Navigation**:
   - Back button returns to home page
   - Click on any product type to view its models
 
 #### 3. **Product Models Page** (`/brand/[brandId]/product/[productId]`)
+
 - **Purpose**: Displays individual models within a product category
 - **Features**:
   - Comprehensive model listings with specifications
@@ -196,17 +206,20 @@ The application follows a hierarchical browsing pattern with three main levels:
 ### Search Functionality
 
 #### **Search Behavior**
+
 - **Case-insensitive**: Search works regardless of letter case
 - **Real-time filtering**: Results update immediately as you type
 - **Contextual placeholders**: Search hints adapt to current page context
 - **Comprehensive matching**: Searches across relevant fields for each page level
 
 #### **Search Scope by Page**
+
 1. **Home Page**: Searches through brand names
 2. **Brand Products**: Searches through product type names within the selected brand
 3. **Product Models**: Searches through model numbers and titles within the selected product type
 
 #### **Search Features**
+
 - **Clear placeholder text**: Shows context-specific search hints (e.g., "Search for Carrier")
 - **Instant results**: No need to press enter; filtering happens on keystroke
 - **Empty state handling**: Displays helpful messages when no results found
@@ -215,16 +228,19 @@ The application follows a hierarchical browsing pattern with three main levels:
 ### User Interface Features
 
 #### **Loading States**
+
 - **Skeleton loaders**: Smooth loading animations while data fetches
 - **Progressive loading**: Different content sections load independently
 - **Error handling**: Graceful fallbacks for missing data or failed requests
 
 #### **Responsive Design**
+
 - **Mobile-optimized**: Touch-friendly interface with appropriate sizing
 - **Flexible layouts**: Adapts to different screen sizes and orientations
 - **Consistent spacing**: Uniform padding and margins throughout the application
 
 #### **Visual Feedback**
+
 - **Hover effects**: Interactive elements provide visual feedback
 - **Focus states**: Keyboard navigation support with visible focus indicators
 - **Transition animations**: Smooth state changes and page transitions
@@ -238,16 +254,19 @@ The application follows a hierarchical browsing pattern with three main levels:
 ### Data Display
 
 #### **Brand Information**
+
 - Logo display with fallback handling
 - Alphabetically sorted brand listings
 - Click-to-navigate functionality
 
 #### **Product Details**
+
 - Product type images and descriptions
 - Hierarchical organization by brand
 - Clear visual separation between categories
 
 #### **Model Specifications**
+
 - Model numbers as primary identifiers
 - Technical specifications displayed as comma-separated values
 - Additional model information (title, images, links)
@@ -271,6 +290,7 @@ The application follows a hierarchical browsing pattern with three main levels:
 ## 🛠️ Technical Architecture
 
 ### Frontend Technology Stack
+
 - **Next.js 15.3.5**: React framework with App Router
 - **React 19**: Latest React with server components
 - **TypeScript 5**: Type safety and developer experience
@@ -278,11 +298,13 @@ The application follows a hierarchical browsing pattern with three main levels:
 - **Lucide React**: Consistent iconography
 
 ### Backend & Database
+
 - **Supabase**: Backend-as-a-Service with PostgreSQL
 - **Real-time subscriptions**: Live data updates (infrastructure ready)
 - **Row Level Security**: Database security policies
 
 ### UI Components
+
 - **Radix UI**: Accessible component primitives
 - **shadcn/ui**: Pre-built component library
 - **Class Variance Authority**: Type-safe component variants
@@ -303,16 +325,19 @@ The most significant challenge encountered during development was extracting and
 #### **Solution: Multi-Stage Data Processing Pipeline**
 
 **1. Comprehensive Data Extraction**
+
 - Extracted all available specification data without initial filtering
 - Captured both structured and unstructured specification content
 - Preserved original formatting context for analysis
 
 **2. Data Cleaning & Filtering**
+
 - Removed clearly unnecessary information (marketing copy, legal disclaimers, navigation elements)
 - Identified and separated actual technical specifications from descriptive content
 - Standardized common measurement units and terminology
 
 **3. Manual Formatting Rules Development**
+
 - Analyzed patterns across thousands of specification entries
 - Developed custom parsing rules for common specification formats:
   - **Table-based specs**: Extracted key-value pairs from HTML tables
@@ -321,18 +346,21 @@ The most significant challenge encountered during development was extracting and
   - **Mixed formats**: Created hybrid parsing strategies for complex layouts
 
 **4. Exception Handling**
+
 - Identified specification entries that didn't fit standard parsing rules
 - Manually reviewed and processed edge cases
 - Created specific handling rules for unique specification formats
 - Implemented fallback strategies for unparseable content
 
 #### **Technical Implementation**
+
 - **Preprocessing**: Normalized HTML structure and removed formatting artifacts
 - **Pattern Recognition**: Used regular expressions and string matching for common spec patterns
 - **Quality Validation**: Implemented checks to ensure parsed specifications were meaningful
 - **Manual Review**: Conducted spot checks and manual verification of parsing accuracy
 
 #### **Results Achieved**
+
 - Successfully parsed and structured over 90% of technical specifications automatically
 - Maintained data quality while handling diverse specification formats
 - Created a scalable approach that could accommodate future brand additions
