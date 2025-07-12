@@ -1,3 +1,30 @@
+/**
+ * ProductModelsPage Component
+ * 
+ * Displays all models for a specific product type within a brand. This is the most
+ * detailed view in the application hierarchy, showing individual product models
+ * with their specifications and action buttons.
+ * 
+ * Route: /brand/[brandId]/product/[productId]
+ * 
+ * Features:
+ * - Displays brand and product type information
+ * - Lists all models for the selected product type
+ * - Shows model specifications from specification_v1 table
+ * - Search functionality for filtering models
+ * - Navigation breadcrumbs showing full path
+ * - Action buttons for each model (PDF, Settings)
+ * - Loading states and error handling
+ * - Fallback image handling for missing model images
+ * 
+ * Data Flow:
+ * 1. Fetches brand details using brandId
+ * 2. Fetches product type details using productId
+ * 3. Fetches models associated with the product type
+ * 4. Fetches specifications for each model from specification_v1 table
+ * 5. Combines all data for display
+ */
+
 "use client"
 
 import { useState, useEffect } from 'react'
@@ -10,18 +37,24 @@ import { useRouter } from 'next/navigation'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 
-// Initialize Supabase client
+// Initialize Supabase client with environment variables
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+/**
+ * Brand interface defining the structure of brand data from Supabase
+ */
 interface Brand {
   id: number
   name: string
   image_url: string
 }
 
+/**
+ * ProductType interface defining the structure of product type data from Supabase
+ */
 interface ProductType {
   id: number
   name: string
@@ -29,6 +62,10 @@ interface ProductType {
   image_url: string
 }
 
+/**
+ * Model interface defining the structure of model data from Supabase
+ * Includes optional specifications array populated from specification_v1 table
+ */
 interface Model {
   id: number
   model_number: string
@@ -36,33 +73,47 @@ interface Model {
   link: string
   image: string
   product_type_id: number
-  specifications?: string[] // Add specifications array
+  specifications?: string[] // Populated from specification_v1 table
 }
 
 export default function ProductModelsPage() {
+  // State management for component data and UI state
   const [brand, setBrand] = useState<Brand | null>(null)
   const [productType, setProductType] = useState<ProductType | null>(null)
   const [models, setModels] = useState<Model[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
+  
+  // Next.js hooks for navigation and route parameters
   const router = useRouter()
   const params = useParams()
   const brandId = params.brandId
   const productId = params.productId
 
+  /**
+   * Effect hook to fetch all required data when route parameters change
+   */
   useEffect(() => {
     if (brandId && productId) {
       fetchData()
     }
   }, [brandId, productId])
 
+  /**
+   * Comprehensive data fetching function that retrieves all necessary information
+   * for the product models page. This includes:
+   * 1. Brand information
+   * 2. Product type information
+   * 3. Models associated with the product type
+   * 4. Specifications for each model
+   */
   const fetchData = async () => {
     try {
       console.log('=== DEBUG: Starting fetchData ===')
       console.log('brandId:', brandId)
       console.log('productId:', productId)
 
-      // Fetch brand details
+      // Step 1: Fetch brand details using brandId from URL
       const { data: brandData, error: brandError } = await supabase
         .from('brands')
         .select('*')
@@ -78,7 +129,7 @@ export default function ProductModelsPage() {
 
       setBrand(brandData)
 
-      // Fetch product type details
+      // Step 2: Fetch product type details using productId from URL
       const { data: productData, error: productError } = await supabase
         .from('product_types')
         .select('*')
@@ -94,7 +145,7 @@ export default function ProductModelsPage() {
 
       setProductType(productData)
 
-      // Fetch models for this product type
+      // Step 3: Fetch models associated with this product type
       const { data: modelsData, error: modelsError } = await supabase
         .from('models')
         .select('*')
@@ -109,12 +160,13 @@ export default function ProductModelsPage() {
         return
       }
 
+      // Step 4: If models exist, fetch their specifications
       if (modelsData && modelsData.length > 0) {
-        // Get all model numbers to fetch their specifications
+        // Extract all model numbers for specifications query
         const modelNumbers = modelsData.map(model => model.model_number)
         console.log('Model numbers for specs query:', modelNumbers)
 
-        // Fetch specifications for all these models
+        // Fetch specifications for all models from specification_v1 table
         const { data: specsData, error: specsError } = await supabase
           .from('specification_v1')
           .select('model_number, specs')
@@ -126,7 +178,7 @@ export default function ProductModelsPage() {
           console.error('Error fetching specifications:', specsError)
         }
 
-        // Group specifications by model_number
+        // Step 5: Group specifications by model_number for efficient lookup
         const specsMap = new Map<string, string[]>()
         if (specsData) {
           specsData.forEach(spec => {
@@ -139,7 +191,7 @@ export default function ProductModelsPage() {
 
         console.log('Grouped specifications:', Object.fromEntries(specsMap))
 
-        // Add specifications to models
+        // Step 6: Combine models with their specifications
         const modelsWithSpecs = modelsData.map(model => ({
           ...model,
           specifications: specsMap.get(model.model_number) || []
@@ -150,7 +202,7 @@ export default function ProductModelsPage() {
         setModels([])
       }
       
-      // Set initial search query as placeholder
+      // Set initial search query placeholder with product type name
       setSearchQuery(`Search for ${productData?.name}`)
       
       console.log('=== DEBUG: fetchData completed ===')
@@ -166,6 +218,11 @@ export default function ProductModelsPage() {
     }
   }
 
+  /**
+   * Filters models based on search query
+   * Searches through model numbers and titles
+   * Handles the placeholder text appropriately
+   */
   const filteredModels = models.filter(model => {
     // If it's the default placeholder text, show all models
     if (searchQuery.startsWith('Search for ')) {
@@ -195,15 +252,19 @@ export default function ProductModelsPage() {
   
   console.log('Filtered models count:', filteredModels.length)
 
+  // Loading state with comprehensive skeleton loaders
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 px-4 py-6">
         <div className="animate-pulse">
+          {/* Header skeleton */}
           <div className="flex items-center gap-4 mb-6">
             <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
             <div className="flex-1 h-12 bg-gray-200 rounded"></div>
           </div>
+          {/* Breadcrumb skeleton */}
           <div className="h-6 bg-gray-200 rounded mb-6 w-48"></div>
+          {/* Models list skeleton */}
           <div className="space-y-4">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm">
@@ -227,6 +288,7 @@ export default function ProductModelsPage() {
     )
   }
 
+  // Error state when brand or product type is not found
   if (!brand || !productType) {
     return (
       <div className="min-h-screen bg-gray-50 px-4 py-6 flex items-center justify-center">
@@ -242,9 +304,11 @@ export default function ProductModelsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6">
-      {/* Header with back arrow and search */}
+      {/* Header Section with Navigation and Search */}
       <div className="mb-6">
+        {/* Top navigation bar */}
         <div className="flex items-center gap-4 mb-4">
+          {/* Back navigation button */}
           <Button 
             variant="ghost" 
             size="icon" 
@@ -254,6 +318,7 @@ export default function ProductModelsPage() {
             <ArrowLeft className="h-6 w-6" />
           </Button>
           
+          {/* Search input with product-specific placeholder */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <Input
@@ -265,7 +330,7 @@ export default function ProductModelsPage() {
           </div>
         </div>
 
-        {/* Breadcrumb */}
+        {/* Breadcrumb Navigation showing full hierarchy */}
         <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
           <span>...</span>
           <span>/</span>
@@ -290,7 +355,9 @@ export default function ProductModelsPage() {
               console.log('Model clicked:', model.model_number)
             }}
           >
+            {/* Model information section */}
             <div className="flex items-center gap-4">
+              {/* Model image */}
               <div className="w-12 h-12 relative">
                 <Image
                   src={model.image}
@@ -298,16 +365,20 @@ export default function ProductModelsPage() {
                   fill
                   className="object-contain"
                   onError={(e) => {
-                    // Fallback to a placeholder if image fails to load
+                    // Fallback to placeholder if image fails to load
                     const target = e.target as HTMLImageElement
                     target.src = '/placeholder-model.png'
                   }}
                 />
               </div>
+              
+              {/* Model details */}
               <div>
+                {/* Model number (primary identifier) */}
                 <div className="text-lg font-medium text-gray-900">
                   {model.model_number}
                 </div>
+                {/* Model specifications (secondary information) */}
                 <div className="text-sm text-gray-500">
                   {model.specifications && model.specifications.length > 0 
                     ? model.specifications.join(', ')
@@ -317,20 +388,38 @@ export default function ProductModelsPage() {
               </div>
             </div>
             
+            {/* Action buttons section */}
             <div className="flex items-center gap-2">
-              {/* Icons - functionality ignored for now as requested */}
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+              {/* PDF/Documentation button - functionality to be implemented */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={(e) => e.stopPropagation()}
+                title="View documentation"
+              >
                 <FileText className="h-4 w-4 text-gray-400" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+              
+              {/* Settings/Configuration button - functionality to be implemented */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={(e) => e.stopPropagation()}
+                title="Model settings"
+              >
                 <Settings className="h-4 w-4 text-gray-400" />
               </Button>
+              
+              {/* Navigation arrow */}
               <ChevronRight className="h-6 w-6 text-gray-400" />
             </div>
           </div>
         ))}
       </div>
 
+      {/* Empty state when no models match search or product has no models */}
       {filteredModels.length === 0 && (
         <div className="text-center py-8 text-gray-500">
           No models found for {productType.name}

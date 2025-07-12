@@ -1,4 +1,21 @@
+/**
+ * BrandProductsPage Component
+ * 
+ * Displays all product types for a specific brand. Users can search through
+ * products and navigate to individual product model pages.
+ * 
+ * Route: /brand/[brandId]
+ * 
+ * Features:
+ * - Displays brand information and product types
+ * - Search functionality for filtering products
+ * - Navigation breadcrumbs
+ * - Loading states and error handling
+ * - Fallback image handling for missing product images
+ */
+
 "use client"
+
 import { useState, useEffect } from 'react'
 import { Search, ChevronRight, ArrowLeft } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -9,18 +26,24 @@ import { useRouter } from 'next/navigation'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 
-// Initialize Supabase client
+// Initialize Supabase client with environment variables
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+/**
+ * Brand interface defining the structure of brand data from Supabase
+ */
 interface Brand {
   id: number
   name: string
   image_url: string
 }
 
+/**
+ * ProductType interface defining the structure of product type data from Supabase
+ */
 interface ProductType {
   id: number
   name: string
@@ -29,23 +52,33 @@ interface ProductType {
 }
 
 export default function BrandProductsPage() {
+  // State management for component data and UI state
   const [brand, setBrand] = useState<Brand | null>(null)
   const [productTypes, setProductTypes] = useState<ProductType[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
+  
+  // Next.js hooks for navigation and route parameters
   const router = useRouter()
   const params = useParams()
   const brandId = params.brandId
 
+  /**
+   * Effect hook to fetch brand and product data when brandId changes
+   */
   useEffect(() => {
     if (brandId) {
       fetchBrandAndProducts()
     }
   }, [brandId])
 
+  /**
+   * Fetches brand details and associated product types from Supabase
+   * First retrieves brand information, then fetches all product types for that brand
+   */
   const fetchBrandAndProducts = async () => {
     try {
-      // Fetch brand details
+      // Fetch brand details using the brandId from URL parameters
       const { data: brandData, error: brandError } = await supabase
         .from('brands')
         .select('*')
@@ -59,7 +92,7 @@ export default function BrandProductsPage() {
 
       setBrand(brandData)
 
-      // Fetch product types for this brand
+      // Fetch product types associated with this brand
       const { data: productData, error: productError } = await supabase
         .from('product_types')
         .select('*')
@@ -73,7 +106,7 @@ export default function BrandProductsPage() {
 
       setProductTypes(productData || [])
       
-      // Set initial search query to brand name
+      // Set initial search query placeholder with brand name
       setSearchQuery(`Search for ${brandData?.name}`)
     } catch (error) {
       console.error('Error:', error)
@@ -82,19 +115,29 @@ export default function BrandProductsPage() {
     }
   }
 
+  /**
+   * Filters product types based on search query
+   * Removes the placeholder text and performs case-insensitive search
+   */
   const filteredProducts = productTypes.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.replace(/search for \w+/i, '').trim().toLowerCase())
+    product.name.toLowerCase().includes(
+      searchQuery.replace(/search for \w+/i, '').trim().toLowerCase()
+    )
   )
 
+  // Loading state with skeleton loaders
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 px-4 py-6">
         <div className="animate-pulse">
+          {/* Header skeleton */}
           <div className="flex items-center gap-4 mb-6">
             <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
             <div className="flex-1 h-12 bg-gray-200 rounded"></div>
           </div>
+          {/* Breadcrumb skeleton */}
           <div className="h-6 bg-gray-200 rounded mb-6 w-32"></div>
+          {/* Product list skeleton */}
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm">
@@ -111,6 +154,7 @@ export default function BrandProductsPage() {
     )
   }
 
+  // Error state when brand is not found
   if (!brand) {
     return (
       <div className="min-h-screen bg-gray-50 px-4 py-6 flex items-center justify-center">
@@ -126,9 +170,11 @@ export default function BrandProductsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6">
-      {/* Header with back arrow and search */}
+      {/* Header Section with Navigation and Search */}
       <div className="mb-6">
+        {/* Top navigation bar */}
         <div className="flex items-center gap-4 mb-4">
+          {/* Back navigation button */}
           <Button 
             variant="ghost" 
             size="icon" 
@@ -138,6 +184,7 @@ export default function BrandProductsPage() {
             <ArrowLeft className="h-6 w-6" />
           </Button>
           
+          {/* Search input with brand-specific placeholder */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <Input
@@ -149,7 +196,7 @@ export default function BrandProductsPage() {
           </div>
         </div>
 
-        {/* Breadcrumb */}
+        {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
           <span>...</span>
           <span>/</span>
@@ -166,14 +213,14 @@ export default function BrandProductsPage() {
             key={product.id}
             className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => {
-              console.log('=== DEBUG: Product clicked ===')
-              console.log('brandId:', brandId)
-              console.log('product.id:', product.id)
-              console.log('Navigating to:', `/brand/${brandId}/product/${product.id}`)
+              
+              // Navigate to product models page
               router.push(`/brand/${brandId}/product/${product.id}`)
             }}
           >
+            {/* Product information */}
             <div className="flex items-center gap-4">
+              {/* Product image */}
               <div className="w-12 h-12 relative">
                 <Image
                   src={product.image_url}
@@ -181,21 +228,24 @@ export default function BrandProductsPage() {
                   fill
                   className="object-contain"
                   onError={(e) => {
-                    // Fallback to a placeholder if image fails to load
+                    // Fallback to placeholder if image fails to load
                     const target = e.target as HTMLImageElement
                     target.src = '/placeholder-product.png'
                   }}
                 />
               </div>
+              {/* Product name */}
               <span className="text-lg font-medium text-gray-900">
                 {product.name}
               </span>
             </div>
+            {/* Navigation arrow */}
             <ChevronRight className="h-6 w-6 text-gray-400" />
           </div>
         ))}
       </div>
 
+      {/* Empty state when no products match search or brand has no products */}
       {filteredProducts.length === 0 && (
         <div className="text-center py-8 text-gray-500">
           No products found for {brand.name}
