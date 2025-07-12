@@ -202,8 +202,8 @@ export default function ProductModelsPage() {
         setModels([])
       }
       
-      // Set initial search query placeholder with product type name
-      setSearchQuery(`Search for ${productData?.name}`)
+      // Set initial search query placeholder empty
+      setSearchQuery(``)
       
       console.log('=== DEBUG: fetchData completed ===')
       console.log('Final state:', {

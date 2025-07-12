@@ -106,8 +106,8 @@ export default function BrandProductsPage() {
 
       setProductTypes(productData || [])
       
-      // Set initial search query placeholder with brand name
-      setSearchQuery(`Search for ${brandData?.name}`)
+      // Set initial search query placeholder empty
+      setSearchQuery(``)
     } catch (error) {
       console.error('Error:', error)
     } finally {
