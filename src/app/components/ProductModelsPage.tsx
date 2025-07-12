@@ -11,6 +11,7 @@
  * - Displays brand and product type information
  * - Lists all models for the selected product type
  * - Shows model specifications from specification_v1 table
+ * - PDF documentation access from manuals table
  * - Search functionality for filtering models
  * - Navigation breadcrumbs showing full path
  * - Action buttons for each model (PDF, Settings)
@@ -22,7 +23,8 @@
  * 2. Fetches product type details using productId
  * 3. Fetches models associated with the product type
  * 4. Fetches specifications for each model from specification_v1 table
- * 5. Combines all data for display
+ * 5. Fetches manuals/PDFs for each model from manuals table
+ * 6. Combines all data for display
  */
 
 "use client"
@@ -63,8 +65,16 @@ interface ProductType {
 }
 
 /**
+ * Manual interface defining the structure of manual data from Supabase
+ */
+interface Manual {
+  model_number: string
+  pdf_url: string
+}
+
+/**
  * Model interface defining the structure of model data from Supabase
- * Includes optional specifications array populated from specification_v1 table
+ * Includes optional specifications and manual data
  */
 interface Model {
   id: number
@@ -74,6 +84,7 @@ interface Model {
   image: string
   product_type_id: number
   specifications?: string[] // Populated from specification_v1 table
+  manual?: Manual // Populated from manuals table
 }
 
 export default function ProductModelsPage() {
@@ -106,6 +117,7 @@ export default function ProductModelsPage() {
    * 2. Product type information
    * 3. Models associated with the product type
    * 4. Specifications for each model
+   * 5. Manuals/PDFs for each model
    */
   const fetchData = async () => {
     try {
@@ -160,11 +172,11 @@ export default function ProductModelsPage() {
         return
       }
 
-      // Step 4: If models exist, fetch their specifications
+      // Step 4: If models exist, fetch their specifications and manuals
       if (modelsData && modelsData.length > 0) {
-        // Extract all model numbers for specifications query
+        // Extract all model numbers for specifications and manuals queries
         const modelNumbers = modelsData.map(model => model.model_number)
-        console.log('Model numbers for specs query:', modelNumbers)
+        console.log('Model numbers for specs and manuals query:', modelNumbers)
 
         // Fetch specifications for all models from specification_v1 table
         const { data: specsData, error: specsError } = await supabase
@@ -178,6 +190,18 @@ export default function ProductModelsPage() {
           console.error('Error fetching specifications:', specsError)
         }
 
+        // Fetch manuals for all models from manuals table
+        const { data: manualsData, error: manualsError } = await supabase
+          .from('manuals')
+          .select('model_number, pdf_url')
+          .in('model_number', modelNumbers)
+
+        console.log('Manuals query result:', { manualsData, manualsError })
+
+        if (manualsError) {
+          console.error('Error fetching manuals:', manualsError)
+        }
+
         // Step 5: Group specifications by model_number for efficient lookup
         const specsMap = new Map<string, string[]>()
         if (specsData) {
@@ -189,15 +213,25 @@ export default function ProductModelsPage() {
           })
         }
 
-        console.log('Grouped specifications:', Object.fromEntries(specsMap))
+        // Step 6: Group manuals by model_number for efficient lookup
+        const manualsMap = new Map<string, Manual>()
+        if (manualsData) {
+          manualsData.forEach(manual => {
+            manualsMap.set(manual.model_number, manual)
+          })
+        }
 
-        // Step 6: Combine models with their specifications
-        const modelsWithSpecs = modelsData.map(model => ({
+        console.log('Grouped specifications:', Object.fromEntries(specsMap))
+        console.log('Grouped manuals:', Object.fromEntries(manualsMap))
+
+        // Step 7: Combine models with their specifications and manuals
+        const modelsWithData = modelsData.map(model => ({
           ...model,
-          specifications: specsMap.get(model.model_number) || []
+          specifications: specsMap.get(model.model_number) || [],
+          manual: manualsMap.get(model.model_number)
         }))
 
-        setModels(modelsWithSpecs)
+        setModels(modelsWithData)
       } else {
         setModels([])
       }
@@ -215,6 +249,24 @@ export default function ProductModelsPage() {
       console.error('Error:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  /**
+   * Handles PDF document opening
+   * Opens the PDF URL in a new tab if available
+   */
+  const handlePdfClick = (model: Model, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent the model row click event
+    
+    if (model.manual?.pdf_url) {
+      // Open PDF in new tab
+      window.open(model.manual.pdf_url, '_blank', 'noopener,noreferrer')
+      console.log('Opening PDF for model:', model.model_number, 'URL:', model.manual.pdf_url)
+    } else {
+      // Show alert if no PDF is available
+      alert(`No manual available for model ${model.model_number}`)
+      console.log('No PDF available for model:', model.model_number)
     }
   }
 
@@ -390,15 +442,15 @@ export default function ProductModelsPage() {
             
             {/* Action buttons section */}
             <div className="flex items-center gap-2">
-              {/* PDF/Documentation button - functionality to be implemented */}
+              {/* PDF/Documentation button with enhanced functionality */}
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8" 
-                onClick={(e) => e.stopPropagation()}
-                title="View documentation"
+                className={`h-8 w-8 ${model.manual ? 'hover:bg-blue-50' : 'opacity-50 cursor-not-allowed'}`}
+                onClick={(e) => handlePdfClick(model, e)}
+                title={model.manual ? 'View documentation' : 'No manual available'}
               >
-                <FileText className="h-4 w-4 text-gray-400" />
+                <FileText className={`h-4 w-4 ${model.manual ? 'text-blue-600' : 'text-gray-400'}`} />
               </Button>
               
               {/* Settings/Configuration button - functionality to be implemented */}
